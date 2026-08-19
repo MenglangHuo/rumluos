@@ -1,0 +1,44 @@
+{
+  "comment": "Sample policy for dedicated Public S3 Bucket (AWS_S3_PUBLIC_BUCKET_NAME)",
+  "PublicBucketPolicy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "PublicReadAccess",
+        "Effect": "Allow",
+        "Principal": "*",
+        "Action": [
+          "s3:GetObject"
+        ],
+        "Resource": [
+          "arn:aws:s3:::YOUR_PUBLIC_BUCKET_NAME/*"
+        ]
+      }
+    ]
+  },
+  "commentPrivate": "Sample policy for dedicated Private S3 Bucket (AWS_S3_BUCKET)",
+  "PrivateBucketPolicy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "DenyUnauthenticatedAccess",
+        "Effect": "Deny",
+        "Principal": "*",
+        "Action": [
+          "s3:GetObject"
+        ],
+        "Resource": [
+          "arn:aws:s3:::YOUR_PRIVATE_BUCKET_NAME/*"
+        ],
+        "Condition": {
+          "StringNotLike": {
+            "aws:PrincipalArn": [
+              "arn:aws:iam::YOUR_ACCOUNT_ID:user/YOUR_BACKEND_USER",
+              "arn:aws:iam::YOUR_ACCOUNT_ID:role/YOUR_BACKEND_ROLE"
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3BucketsListAccess",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": [
+        "arn:aws:s3:::YOUR_PRIVATE_BUCKET_NAME",
+        "arn:aws:s3:::YOUR_PUBLIC_BUCKET_NAME"
+      ]
+    },
+    {
+      "Sid": "S3ObjectsCrudAccess",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::YOUR_PRIVATE_BUCKET_NAME/*",
+        "arn:aws:s3:::YOUR_PUBLIC_BUCKET_NAME/*"
+      ]
+    }
+  ]
+}

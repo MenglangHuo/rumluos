@@ -1,0 +1,138 @@
+
+services:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PostgreSQL 17
+  # Plain postgres:17-alpine — no PostGIS, no custom Dockerfile required.
+  # ═══════════════════════════════════════════════════════════════════════════
+  postgres:
+    image: postgres:17-alpine
+    container_name: ${APP_PREFIX:-rumluos}-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-rumluos_db}
+      POSTGRES_USER:     ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      PGDATA:            /var/lib/postgresql/data/pgdata
+      # Force UTC at DB engine level — critical for global multi-timezone system
+      PGTZ:              UTC
+      TZ:                UTC
+    ports:
+      # Bind to localhost only — never expose the DB port publicly
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-54326}:5432"
+    volumes:
+      - rumluos_pgdata:/var/lib/postgresql/data
+    networks:
+      - rumluos-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-rumluos_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+#  # ═══════════════════════════════════════════════════════════════════════════
+#  # Redis 7
+#  # ═══════════════════════════════════════════════════════════════════════════
+#  redis:
+#    image: redis:7-alpine
+#    container_name: ${APP_PREFIX:-rumluos}-redis
+#    restart: unless-stopped
+#    command: >
+#      redis-server
+#      --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+#      --maxmemory 256mb
+#      --maxmemory-policy allkeys-lru
+#      --save 60 1
+#      --loglevel warning
+#    ports:
+#      # Bind to localhost only
+#      - "127.0.0.1:${REDIS_HOST_PORT:-63790}:6379"
+#    volumes:
+#      - rumluos_redis:/data
+#    networks:
+#      - rumluos-net
+#    healthcheck:
+#      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#      start_period: 10s
+#    logging: *default-logging
+
+  rumluos-app:
+    image: rumluos-app:${APP_VERSION:-latest}
+    container_name: ${APP_PREFIX:-rumluos}-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    mem_limit: 1GB
+    mem_reservation: 512MB
+
+    # ── Container Security Hardening ──────────────────────────────────────
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=128M
+
+    environment:
+      # ── Timezone — MUST be UTC for global multi-timezone system ──────────
+      TZ: UTC
+
+      # ── Spring ───────────────────────────────────────────────────────────
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+
+      # ── Database ─────────────────────────────────────────────────────────
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/${POSTGRES_DB:-rumluos_db}
+      SPRING_R2DBC_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_R2DBC_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-rumluos_db}
+      SPRING_FLYWAY_USER: ${POSTGRES_USER:-postgres}
+      SPRING_FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+
+      # ── File uploads ─────────────────────────────────────────────────────
+      FILE_UPLOAD_DIR: /app/uploads
+
+    ports:
+      # Bind to localhost — put AWS ALB or Nginx reverse proxy in front
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    volumes:
+      - rumluos_uploads:/app/uploads
+    networks:
+      - rumluos-net
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"
+      interval: 15s
+      timeout: 10s
+      retries: 6
+      start_period: 60s
+    logging: *default-logging
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  rumluos-net:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  rumluos_pgdata:
+    driver: local
+  rumluos_uploads:
+    driver: local
+#  rumluos_redis:
+#    driver: local

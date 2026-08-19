@@ -1,0 +1,62 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: rumluos
+  r2dbc:
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:54326/rumluos_db}
+    username: ${SPRING_R2DBC_USERNAME:postgres}
+    password: ${SPRING_R2DBC_PASSWORD:}
+    pool:
+      initial-size: 5
+      max-size: 20
+      max-idle-time: 30m
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
+    url: ${SPRING_FLYWAY_URL:jdbc:postgresql://localhost:54326/rumluos_db}
+    user: ${SPRING_FLYWAY_USER:postgres}
+    password: ${SPRING_FLYWAY_PASSWORD:}
+    baseline-on-migrate: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    version: ${APP_VERSION:dev}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    org.springframework.data.r2dbc: ${R2DBC_LOG_LEVEL:INFO}
+    org.flywaydb: INFO
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+jwt:
+  issuer: ${JWT_ISSUER:rumluos-auth}
+  audience: ${JWT_AUDIENCE:rumluos-api}
+  access:
+    expiration: ${JWT_ACCESS_EXPIRATION:1200000}
+  refresh:
+    expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+  keys:
+    private-key: ${JWT_PRIVATE_KEY:}
+    public-key: ${JWT_PUBLIC_KEY:}
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET:}
+    public-bucket-name: ${AWS_S3_PUBLIC_BUCKET_NAME:}
+    region: ${AWS_S3_REGION:us-east-1}
+    presigned-url-expiration-minutes: ${AWS_S3_PRESIGNED_URL_EXPIRATION_MINUTES:15}
+  credentials:
+    access-key: ${AWS_ACCESS_KEY_ID:}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:}
