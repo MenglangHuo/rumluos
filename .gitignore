@@ -1,0 +1,41 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencies and build output
+**/node_modules/
+**/.next/
+**/build/
+**/target/
+**/.gradle/
+**/out/
+**/dist/
+**/coverage/
+**/tsconfig.tsbuildinfo
+**/.turbo/
+
+# Runtime data and logs
+/backups/
+**/uploads/
+**/*.log
+**/logs/
+
+# IDE and OS files
+.idea/
+.vscode/
+**/.idea/
+**/.vscode/
+**/.DS_Store
+*.iml
+*.iws
+*.ipr
+
+# Local tool metadata
+.codex/
+.agents/
+**/.codex/
+**/.agents/
