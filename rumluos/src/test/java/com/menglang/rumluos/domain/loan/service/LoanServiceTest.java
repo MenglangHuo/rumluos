@@ -45,6 +45,7 @@ class LoanServiceTest {
 
         InvoiceRepository invoiceRepository = Mockito.mock(InvoiceRepository.class);
         FinanceService financeService = Mockito.mock(FinanceService.class);
+        com.menglang.rumluos.domain.inventory.service.InventoryService inventoryService = Mockito.mock(com.menglang.rumluos.domain.inventory.service.InventoryService.class);
 
         Map<String, AmortizationCalculator> calculators = new HashMap<>();
         calculators.put("EMI_CALCULATOR", new EmiAmortizationCalculator());
@@ -52,7 +53,7 @@ class LoanServiceTest {
         calculators.put("EQUAL_PRINCIPAL_CALCULATOR", new EqualPrincipalAmortizationCalculator());
 
         AmortizationCalculatorFactory factory = new AmortizationCalculatorFactory(calculators);
-        loanService = new LoanService(loanRepository, loanItemRepository, loanScheduleRepository, customerRepository, productRepository, invoiceRepository, financeService, databaseClient, factory);
+        loanService = new LoanService(loanRepository, loanItemRepository, loanScheduleRepository, customerRepository, productRepository, invoiceRepository, financeService, databaseClient, factory, inventoryService);
     }
 
     @Test

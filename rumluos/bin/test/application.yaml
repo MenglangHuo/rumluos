@@ -1,0 +1,35 @@
+jwt:
+  issuer: rumluos-auth-test
+  audience: rumluos-api-test
+  access:
+    expiration: 1200000
+  refresh:
+    expiration: 604800000
+  keys:
+    private-key: "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCfm0faOGB4iiHZNGUQn6Z0RluLx2n+8IE9H6brU48jcoj4ZBmhwDsi172xKDktO/cHHZzwPyzZzdzT0Su9n6e7RnxTUoaHsPVz2qNT+qUhz+AHnYzyOoFNm1KYW/lH5BWm26ADdrn4R30N6DrjzAZLfWIZHwgxE/Rj3ydZ2j0afHFg7BJmz6ad5vXutIIpB5zDpu+cdUqYfMqaCL7dSNp1uHO5lZVKS8WncnijcJzNApwqYROenqnWVroMsUTYBf/EdiYk7jdzmxIAK2pG87+sWZX2IIvd2OECNYFQizgVCyYRtOj/R6L3EajpB8MY1tIDrtebpAeDVyaiiWlwS7xfAgMBAAECggEACwqH7EhYIXPqJtzMB7FeUiQyiGHm1ZRiVw3N00Zi3DXmfyBq8YNF1AGOsCcIhYuPaYuajrggFyp5lfbzYAPKa6x9me9XOnh7EmT+mtGiWMtzmQiaISumREMex0bINjlIvNPr/DFbaMSGmc6wkY+h+S5BpLE+iilHj8fL2227KmNzXnV0G4utE7ONIaTLZDxjy+2XmgIVDgN991sKmjQtHJnyqwp67MHi1AeQkg3U+4i/KP47WodCWa+EGG4jEPxuf1gsQDJrkr8OJ3Qzh950kpiQkADBOd2va8p38zOaXjAadwU/4Xi/3C0Sn3ADXELJI4/C2jdWB9UWMR7hhbO2qQKBgQDdNNBidg4BWNtf4pW6iKk95KhLIdKxpZL1idN/GRlsDIRVv4zr5us4KR8J6fuXvQAl1ymgDHIoEDP58uU4iwND7aoLsa4c+Fj3k6PAMFgqAh55x8sY6a6Cu8Rjre3eKbech2AZ+curNSOSOd3h8XvJRm8DrEPoLzL1IuxnmglSuwKBgQC4thDQUIkk3M91dIfmRGWr96raolSANg8Ld8ksuSsCU/Mz/83JthLSYySzbY/zw1zAH2CKGIeE04adPsT7A+CZyJrs0sD0Obi+rMTH4TqbWKqymCcdZBFzSpuX2OKkG++mH8uU/VrqjHD4aIHKU2j1ch3xhlZW+euTMUpN06E8rQKBgH5e7a1SRC4A1VKx31fxOr5hIsPJTtSuAobDdk/lxuAzRma2R4t9IGO1GkZPpavKDYuQn/cPJSg+GXNxkAH9aKAl5j9IAnAKcMj/T008USGulDp+KUjSNx/4pPlNI9cHfh2uOPid+/yTHv8qj9fEXTNfSYyPnTvHuxTQHr4RAcKBAoGABde0dnJltCXL5iI2fkEhmivuWpYR6DBNj4ZNdb2xr5QqODXaM4wv0jnSml5X1FUUpPsZGaUm/DuYoXav0mTQAO1IgT81XURKJLXgT5Y/PVSzqYyIiDR3HNd6TnZMzPYZQX71+JN/AbZJiIH9wQGca08dxVsDdiLXocNIX2fXTM0CgYEAspGswDX2OxXdTASuVLMwvZM1YW6tyMGLYf00TTKjn2sIBa8jTnM8OnA2biR49cgHfU++fObLSAp2Xn/XrL3FU4vB6LFXWMEgfQZ7eqNVZn6gXpbEAMnFLMh9d1aC53IhM3jqv3aJVwkUOBeI+U5O9x8A/3HqTB/f9A+eYAwZkbY="
+    public-key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn5tH2jhgeIoh2TRlEJ+mdEZbi8dp/vCBPR+m61OPI3KI+GQZocA7Ite9sSg5LTv3Bx2c8D8s2c3c09ErvZ+nu0Z8U1KGh7D1c9qjU/qlIc/gB52M8jqBTZtSmFv5R+QVptugA3a5+Ed9Deg648wGS31iGR8IMRP0Y98nWdo9GnxxYOwSZs+mneb17rSCKQecw6bvnHVKmHzKmgi+3UjadbhzuZWVSkvFp3J4o3CczQKcKmETnp6p1la6DLFE2AX/xHYmJO43c5sSACtqRvO/rFmV9iCL3djhAjWBUIs4FQsmEbTo/0ei9xGo6QfDGNbSA67Xm6QHg1cmoolpcEu8XwIDAQAB"
+
+spring:
+  autoconfigure:
+    exclude:
+      - io.opentelemetry.instrumentation.spring.autoconfigure.OpenTelemetryAutoConfiguration
+  r2dbc:
+    url: r2dbc:postgresql://localhost:54326/rumluos_db
+    username: postgres
+    password: ""
+  flyway:
+    enabled: false
+    url: jdbc:postgresql://localhost:54326/rumluos_db
+    user: postgres
+    password: ""
+
+aws:
+  s3:
+    bucket: test-bucket
+    public-bucket-name: test-public-bucket
+    region: us-east-1
+    presigned-url-expiration-minutes: 15
+
+otel:
+  sdk:
+    disabled: true

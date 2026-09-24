@@ -47,6 +47,8 @@ public class PageUtils {
     public static <T> PageResponse<T> createPageResponse(List<T> content, long totalElements, Pageable pageable) {
         return build(content, totalElements, pageable);
     }
+
+
     private static <T> PageResponse<T> build(List<T> content, long totalElements, Pageable pageable) {
         int pageSize = pageable.getPageSize();
         int pageNumber = pageable.getPageNumber();
@@ -106,8 +108,8 @@ public class PageUtils {
     public static Map<String, Object> extractFilters(org.springframework.web.reactive.function.server.ServerRequest request) {
         Map<String, Object> filters = new java.util.HashMap<>();
         request.queryParams().forEach((key, values) -> {
-            if (!isControlQueryParam(key) && values != null && !values.isEmpty()) {
-                filters.put(key, values.get(0));
+            if (!isControlQueryParam(key) && !values.isEmpty()) {
+                filters.put(key, values.getFirst());
             }
         });
         return filters;

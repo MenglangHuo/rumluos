@@ -12,7 +12,7 @@ public class SecurityUtils {
         return Mono.deferContextual(ctxView ->
                 ReactiveSecurityContextHolder.getContext()
                         .filter(ctx -> ctx.getAuthentication() != null && ctx.getAuthentication().getPrincipal() instanceof CustomUserDetails)
-                        .map(ctx -> (CustomUserDetails) ctx.getAuthentication().getPrincipal())
+                        .map(ctx -> (CustomUserDetails) Objects.requireNonNull(Objects.requireNonNull(ctx.getAuthentication()).getPrincipal()))
                         .flatMap(userDetails -> {
                             if (userDetails.isSystemAdmin()) {
                                 if (ctxView.hasKey("REQUEST_COMPANY_ID")) {
@@ -29,7 +29,7 @@ public class SecurityUtils {
     public static Mono<Long> getCurrentUserId() {
         return ReactiveSecurityContextHolder.getContext()
                 .filter(ctx -> ctx.getAuthentication() != null && ctx.getAuthentication().getPrincipal() instanceof CustomUserDetails)
-                .map(ctx -> (CustomUserDetails) ctx.getAuthentication().getPrincipal())
+                .map(ctx -> (CustomUserDetails) Objects.requireNonNull(Objects.requireNonNull(ctx.getAuthentication()).getPrincipal()))
                 .flatMap(userDetails -> Mono.justOrEmpty(userDetails.getId()));
     }
 }

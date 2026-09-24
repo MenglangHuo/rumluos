@@ -31,10 +31,10 @@ public class JwtTokenProvider {
     @Value("${jwt.audience:rumluos-api}")
     private String audience;
 
-    @Value("${jwt.keys.private-key}")
+    @Value("${jwt.keys.private-key:}")
     private String privateKeyStr;
 
-    @Value("${jwt.keys.public-key}")
+    @Value("${jwt.keys.public-key:}")
     private String publicKeyStr;
 
     private PrivateKey privateKey;
@@ -43,23 +43,48 @@ public class JwtTokenProvider {
     @PostConstruct
     public void init() {
         try {
+            if (privateKeyStr == null || privateKeyStr.trim().isEmpty() ||
+                publicKeyStr == null || publicKeyStr.trim().isEmpty()) {
+                log.warn("JWT RSA keys are not configured in application properties/environment. Generating ephemeral in-memory RSA 2048-bit KeyPair for development.");
+                KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+                kpg.initialize(2048);
+                KeyPair kp = kpg.generateKeyPair();
+                this.privateKey = kp.getPrivate();
+                this.publicKey = kp.getPublic();
+                return;
+            }
+
             java.security.KeyFactory kf = java.security.KeyFactory.getInstance("RSA");
 
             // Parse Private Key (PKCS8)
-            byte[] privateKeyBytes = java.util.Base64.getDecoder().decode(privateKeyStr);
+            String cleanPrivate = cleanKey(privateKeyStr);
+            byte[] privateKeyBytes = java.util.Base64.getDecoder().decode(cleanPrivate);
             java.security.spec.PKCS8EncodedKeySpec privateSpec = new java.security.spec.PKCS8EncodedKeySpec(privateKeyBytes);
             this.privateKey = kf.generatePrivate(privateSpec);
 
             // Parse Public Key (X509)
-            byte[] publicKeyBytes = java.util.Base64.getDecoder().decode(publicKeyStr);
+            String cleanPublic = cleanKey(publicKeyStr);
+            byte[] publicKeyBytes = java.util.Base64.getDecoder().decode(cleanPublic);
             java.security.spec.X509EncodedKeySpec publicSpec = new java.security.spec.X509EncodedKeySpec(publicKeyBytes);
             this.publicKey = kf.generatePublic(publicSpec);
 
             log.info("Successfully loaded RSA KeyPair from configuration for JWT signing");
         } catch (Exception e) {
             log.error("Failed to load RSA keys from configuration", e);
-            throw new RuntimeException(e);
+            throw new IllegalStateException("Invalid RSA key configuration for JWT signing: " + e.getMessage(), e);
         }
+    }
+
+    private String cleanKey(String key) {
+        if (key == null) return "";
+        return key
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replace("-----BEGIN RSA PRIVATE KEY-----", "")
+                .replace("-----END RSA PRIVATE KEY-----", "")
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s+", "");
     }
 
     public String generateAccessToken(CustomUserDetails userDetails) {

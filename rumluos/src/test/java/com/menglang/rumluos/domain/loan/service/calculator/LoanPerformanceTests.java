@@ -70,7 +70,8 @@ class LoanPerformanceTests {
                 mock(com.menglang.rumluos.domain.finance.repository.InvoiceRepository.class),
                 mock(com.menglang.rumluos.domain.finance.service.FinanceService.class),
                 mockClient,
-                mock(com.menglang.rumluos.domain.loan.service.calculator.AmortizationCalculatorFactory.class)
+                mock(com.menglang.rumluos.domain.loan.service.calculator.AmortizationCalculatorFactory.class),
+                mock(com.menglang.rumluos.domain.inventory.service.InventoryService.class)
         );
 
         List<LoanSchedule> schedules = new ArrayList<>();
