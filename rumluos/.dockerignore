@@ -1,0 +1,12 @@
+.gradle
+build
+bin
+.idea
+.vscode
+.git
+.github
+*.log
+.env
+.env.*
+HELP.md
+docker-compose.yaml
