@@ -10,6 +10,15 @@ Rumluos is a business and loan operations system composed of:
 
 The same Docker Compose structure is used locally and on AWS EC2.
 
+> [!TIP]
+> **Looking for a beginner-friendly, step-by-step tutorial?**
+> Explore our complete **[Rumluos Documentation Hub](docs/README.md)** with dedicated guides:
+> - [**01. Architecture Overview (Explain Like I'm 5)**](docs/01_ARCHITECTURE_OVERVIEW.md)
+> - [**02. Local & On-Premise Setup Guide**](docs/02_LOCAL_ON_PREMISE_SETUP.md)
+> - [**03. AWS Free-Tier Cloud Setup Guide**](docs/03_AWS_FREE_TIER_SETUP.md)
+> - [**04. Terraform Automation Guide**](docs/04_TERRAFORM_AUTOMATION_GUIDE.md)
+> - [**05. Production Operations & Troubleshooting Guide**](docs/05_OPERATIONS_AND_TROUBLESHOOTING.md)
+
 ## 1. Project structure
 
 ```text
@@ -20,6 +29,7 @@ The same Docker Compose structure is used locally and on AWS EC2.
 │   └── docker-compose.yaml         # Application stack
 ├── nginx/
 │   └── nginx.conf                  # Public reverse proxy
+├── terraform/                      # AWS infrastructure (dev and prod)
 ├── rumluos/                        # Spring WebFlux backend
 ├── rumluos-dashboard/              # Next.js frontend
 ├── scripts/
@@ -31,6 +41,10 @@ The same Docker Compose structure is used locally and on AWS EC2.
 │   └── 06_rollback.sh               # Roll back to an old version
 └── backups/                        # Local database backups, ignored by Git
 ```
+
+## AWS infrastructure
+
+Terraform configuration for AWS lives in [`terraform/`](terraform/). It provides separate `dev` and `prod` roots with reusable VPC/application modules. Dev is intentionally small for team testing; production is a multi-AZ starting point. See [`terraform/README.md`](terraform/README.md) for initialization and apply instructions.
 
 ## 2. Requirements
 
@@ -75,6 +89,8 @@ At minimum, set these values:
 
 ```env
 APP_VERSION=0.1.0
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
 POSTGRES_DB=rumluos_db
 POSTGRES_USER=rumluos
 POSTGRES_PASSWORD=use-a-long-random-password
@@ -110,7 +126,51 @@ Copy the two base64 values into `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` in `.env`
 
 Keep the private key secret. Generate a new pair if an old key was exposed.
 
-## 5. Start locally
+## 5. Optional Grafana Cloud observability
+
+The backend supports OpenTelemetry logs, traces, and metrics. All three signals are disabled by default, and each can be enabled independently. Grafana Cloud accepts OTLP for metrics, logs, and traces; Spring Boot uses Micrometer OTLP for application metrics and OpenTelemetry for tracing/logging.
+
+From Grafana Cloud, open **Connections → OpenTelemetry** and copy the OTLP endpoint and authentication header. Put them only in the server `.env`:
+
+```env
+GRAFANA_OTLP_URL=https://otlp-gateway-<region>.grafana.net/otlp
+GRAFANA_OTLP_AUTH=Authorization=Basic%20<base64-credentials>
+OTEL_SERVICE_NAME=rumluos-backend
+OTEL_SDK_DISABLED=false
+```
+
+Enable the signals you want:
+
+```env
+OTEL_TRACES_EXPORTER=otlp
+OTEL_METRICS_EXPORTER=otlp
+OTEL_METRICS_ENABLED=true
+OTEL_LOGS_EXPORTER=otlp
+```
+
+To disable a signal, set its exporter to `none`:
+
+```env
+OTEL_TRACES_EXPORTER=none
+OTEL_METRICS_EXPORTER=none
+OTEL_METRICS_ENABLED=false
+OTEL_LOGS_EXPORTER=none
+```
+
+`OTEL_METRICS_EXPORTER=otlp` selects the OpenTelemetry exporter, while `OTEL_METRICS_ENABLED=true` enables Spring/Micrometer OTLP metrics. Both are intentionally required for metrics. `OTEL_TRACES_SAMPLER_ARG=0.1` would sample approximately 10% of traces; use `1.0` for all traces during initial testing.
+
+After changing telemetry settings, recreate the backend:
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.yaml up -d --force-recreate backend
+scripts/05_healthcheck.sh
+```
+
+Do not put Grafana authentication in Git or in frontend variables. Direct application-to-Grafana OTLP is suitable for this single-server setup; Grafana recommends Grafana Alloy as a collector for more reliable production pipelines and routing.
+
+References: [Grafana Cloud OTLP](https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp/), [Spring Boot observability](https://docs.spring.io/spring-boot/reference/actuator/observability.html).
+
+## 6. Start locally
 
 Validate the rendered Docker Compose configuration:
 
@@ -152,7 +212,7 @@ docker compose --env-file .env -f docker/docker-compose.yaml ps
 
 The public entrypoint is Nginx. PostgreSQL and the backend are not published directly to the host.
 
-## 6. Manage application versions
+## 7. Manage application versions
 
 `VERSION` is the single source of truth for frontend, backend, and Docker image tags:
 
@@ -185,7 +245,7 @@ The backend version is available at:
 http://localhost/actuator/info
 ```
 
-## 7. Database backup and restore
+## 8. Database backup and restore
 
 Create a PostgreSQL backup before risky deployments or migrations:
 
@@ -202,7 +262,7 @@ CONFIRM_RESTORE=1 scripts/04_restore.sh backups/rumluos_<timestamp>.dump
 
 Store production backups outside the EC2 instance as well, such as Amazon S3. The local `backups/` directory is ignored by Git.
 
-## 8. Roll back a failed release
+## 9. Roll back a failed release
 
 List locally available application images:
 
@@ -225,7 +285,7 @@ The rollback script:
 
 Application rollback does not reverse Flyway database migrations. Keep migrations backward-compatible and always create a backup before schema changes.
 
-## 9. Prepare AWS EC2
+## 10. Prepare AWS EC2
 
 Create an Ubuntu EC2 instance and allocate an Elastic IP. An Elastic IP prevents the public server address from changing.
 
@@ -251,7 +311,7 @@ AWS references:
 - [Connect to a Linux EC2 instance](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connect-to-linux-instance.html)
 - [Route a domain to an EC2 instance](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-to-ec2-instance.html)
 
-## 10. Connect to EC2
+## 11. Connect to EC2
 
 From your local computer:
 
@@ -262,7 +322,7 @@ ssh -i your-ec2-key.pem ubuntu@YOUR_ELASTIC_IP
 
 The default username is usually `ubuntu` for Ubuntu AMIs.
 
-## 11. Install Docker and Git on EC2
+## 12. Install Docker and Git on EC2
 
 Run on the EC2 server:
 
@@ -282,7 +342,7 @@ docker --version
 docker compose version
 ```
 
-## 12. Deploy the project to EC2
+## 13. Deploy the project to EC2
 
 Clone the project on EC2:
 
@@ -299,7 +359,11 @@ chmod 600 .env
 nano .env
 ```
 
-Use production values for the database password, JWT keys, domain-related settings, and S3 bucket.
+Use production values for configuration:
+- Set `POSTGRES_HOST` to your RDS endpoint (obtained via `terraform output db_endpoint`).
+- Set `POSTGRES_PASSWORD` to the password retrieved from AWS Secrets Manager (`aws secretsmanager get-secret-value --secret-id "$(terraform output -raw db_secret_arn)" --query SecretString --output text`).
+- Set `AWS_S3_BUCKET` to your S3 bucket name (`terraform output uploads_bucket_name`).
+- Set production JWT keys and domain-related settings.
 
 Build and start the application:
 
@@ -321,7 +385,7 @@ At this stage, the site is available through the EC2 IP:
 http://YOUR_ELASTIC_IP
 ```
 
-## 13. Connect your domain
+## 14. Connect your domain
 
 At your domain provider, create an IPv4 A record:
 
@@ -347,7 +411,7 @@ http://yourdomain.com
 
 The current Nginx configuration is HTTP-only. Port 443 is reserved for the HTTPS configuration and certificate setup.
 
-## 14. HTTPS before public production use
+## 15. HTTPS before public production use
 
 Before sharing the website publicly, configure TLS for the domain. Use either:
 
@@ -363,7 +427,7 @@ curl -I https://yourdomain.com
 
 returns successfully.
 
-## 15. Production operations
+## 16. Production operations
 
 View logs:
 

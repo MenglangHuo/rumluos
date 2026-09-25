@@ -1,30 +1,30 @@
 "use client"
 
-import { Suspense, useState } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { useTheme } from "next-themes"
 import { authApi } from "@/lib/api/endpoints"
 import { setAuthCookies } from "@/app/actions/auth"
 import { getErrorMessage } from "@/lib/api/client"
 import { toast } from "sonner"
 import {
-  CheckCircle2,
   Eye,
   EyeOff,
   Loader2,
   Lock,
   Mail,
-  Shield,
-  LogIn,
   Building2,
-  UserCheck,
   Crown,
   Sparkles,
   ShieldCheck,
-  Star,
+  ArrowRight,
+  Sun,
+  Moon,
+  Check,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -42,181 +42,217 @@ const demoAccounts = [
     role: "System Admin",
     username: "menglang",
     password: "Menglang@dmin!",
-    desc: "Global Access",
     icon: Crown,
-    activeGradient: "from-blue-600 to-indigo-600",
   },
   {
     role: "Tech Admin",
     username: "tech_admin",
     password: "Password@123",
-    desc: "Tech Ops",
     icon: Building2,
-    activeGradient: "from-indigo-600 to-purple-600",
   },
   {
     role: "Villa Admin",
     username: "villa_admin",
     password: "Password@123",
-    desc: "Villa Ops",
-    icon: UserCheck,
-    activeGradient: "from-emerald-600 to-teal-600",
+    icon: Building2,
   },
 ]
 
 function getSafeReturnUrl(value: string | null) {
-  if (!value || value.startsWith("/sign-in") || value.startsWith("/forgot-password") || value.startsWith("/reset-password")) {
+  if (!value) return "/"
+  let cleanValue = value
+  try {
+    cleanValue = decodeURIComponent(value)
+    if (cleanValue.includes("%")) {
+      cleanValue = decodeURIComponent(cleanValue)
+    }
+  } catch {}
+
+  if (
+    !cleanValue ||
+    cleanValue.startsWith("/sign-in") ||
+    cleanValue.startsWith("/forgot-password") ||
+    cleanValue.startsWith("/reset-password")
+  ) {
     return "/"
   }
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/"
+  return cleanValue.startsWith("/") && !cleanValue.startsWith("//") ? cleanValue : "/"
 }
 
-function SystemEmblemSvg() {
+/**
+ * Modern AI Bot Agent Logo Emblem (Cloned from Bronx)
+ */
+function BotAgentLogo({ className = "h-16 w-16" }: { className?: string }) {
   return (
-    <div className="group/emblem relative flex items-center justify-center cursor-pointer">
-      {/* Outer pulsating glow ring */}
-      <div className="absolute -inset-2 rounded-full bg-gradient-to-tr from-cyan-400 via-blue-500 to-purple-500 opacity-40 blur-xl transition-all duration-500 group-hover/emblem:opacity-80 group-hover/emblem:blur-2xl" />
-      
-      {/* Main Emblem SVG */}
-      <svg className="relative h-20 w-20 transform drop-shadow-2xl transition-transform duration-300 group-hover/emblem:scale-105" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div className="group/bot relative flex items-center justify-center">
+      {/* Ambient glowing aura */}
+      <div className="absolute -inset-2 rounded-3xl bg-gradient-to-tr from-cyan-400 via-blue-500 to-indigo-600 opacity-30 blur-xl transition-all duration-500 group-hover/bot:opacity-60 group-hover/bot:blur-2xl" />
+
+      <svg
+        className={`${className} relative transform drop-shadow-lg transition-all duration-300 group-hover/bot:scale-105`}
+        viewBox="0 0 100 100"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
         <defs>
-          <linearGradient id="emblemBg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#2563eb" />
+          <linearGradient id="botBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#1e3a8a" />
             <stop offset="50%" stopColor="#1d4ed8" />
-            <stop offset="100%" stopColor="#1e1b4b" />
+            <stop offset="100%" stopColor="#0f172a" />
           </linearGradient>
-          <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#fef08a" />
-            <stop offset="50%" stopColor="#eab308" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#ca8a04" />
+          <linearGradient id="botHelmet" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor="#cbd5e1" />
           </linearGradient>
-          <linearGradient id="shieldGlass" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.3" />
+          <linearGradient id="botVisor" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#090d16" />
+            <stop offset="100%" stopColor="#0f172a" />
+          </linearGradient>
+          <linearGradient id="botEyeGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#38bdf8" />
+            <stop offset="100%" stopColor="#2563eb" />
+          </linearGradient>
+          <linearGradient id="botEar" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="100%" stopColor="#1d4ed8" />
+          </linearGradient>
+          <linearGradient id="botGlass" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.4" />
             <stop offset="100%" stopColor="#ffffff" stopOpacity="0.05" />
           </linearGradient>
+          <filter id="botGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#38bdf8" floodOpacity="0.6" />
+          </filter>
         </defs>
 
-        {/* Outer Ring */}
-        <circle cx="50" cy="50" r="47" fill="url(#emblemBg)" stroke="#ffffff" strokeWidth="3" />
-        <circle cx="50" cy="50" r="41" fill="none" stroke="url(#goldGradient)" strokeWidth="2" strokeDasharray="4 2" />
+        {/* Rounded Squircle Container */}
+        <rect
+          x="4"
+          y="4"
+          width="92"
+          height="92"
+          rx="26"
+          fill="url(#botBg)"
+          stroke="rgba(255, 255, 255, 0.2)"
+          strokeWidth="2"
+        />
 
-        {/* Floating Stars Top Left / Top Right */}
-        <circle cx="30" cy="26" r="2" fill="#fef08a" />
-        <circle cx="70" cy="26" r="2" fill="#fef08a" />
+        {/* Glass Specular Curved Reflection */}
+        <rect
+          x="6"
+          y="6"
+          width="88"
+          height="44"
+          rx="24"
+          fill="url(#botGlass)"
+        />
 
-        {/* Inner Shield */}
-        <path d="M50 18 L72 30 V56 C72 70 50 82 50 82 C50 82 28 70 28 56 V30 Z" fill="#1e40af" stroke="#ffffff" strokeWidth="2" />
-        <path d="M50 20 L70 31 V54 C70 66 50 78 50 78 C50 78 30 66 30 54 V31 Z" fill="url(#shieldGlass)" />
+        {/* Top Antenna / Signal Emitter */}
+        <line x1="50" y1="14" x2="50" y2="24" stroke="#60a5fa" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="50" cy="14" r="4" fill="#38bdf8" filter="url(#botGlow)" />
+        <circle cx="50" cy="14" r="2" fill="#ffffff" />
 
-        {/* Sun & Rays */}
-        <circle cx="50" cy="40" r="9" fill="url(#goldGradient)" />
+        {/* Side Ears / Audio Sensor Nodes */}
+        <rect x="18" y="42" width="6" height="18" rx="3" fill="url(#botEar)" />
+        <circle cx="21" cy="51" r="1.5" fill="#38bdf8" />
+        <rect x="76" y="42" width="6" height="18" rx="3" fill="url(#botEar)" />
+        <circle cx="79" cy="51" r="1.5" fill="#38bdf8" />
 
-        {/* Mountains / Waves */}
-        <path d="M34 58 L44 46 L52 54 L60 42 L66 58 Z" fill="#ffffff" opacity="0.95" />
-        <path d="M30 58 Q50 64 70 58" stroke="url(#goldGradient)" strokeWidth="2.5" fill="none" />
+        {/* Bot Head Helmet Outer Shell */}
+        <rect
+          x="22"
+          y="24"
+          width="56"
+          height="52"
+          rx="18"
+          fill="url(#botHelmet)"
+          stroke="#94a3b8"
+          strokeWidth="1.5"
+        />
 
-        {/* Checkmark Accent */}
-        <path d="M43 49 L48 54 L58 42" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Inner Visor Face Screen */}
+        <rect
+          x="27"
+          y="31"
+          width="46"
+          height="34"
+          rx="12"
+          fill="url(#botVisor)"
+          stroke="#1e293b"
+          strokeWidth="1.5"
+        />
 
-        {/* Laurel Wreath */}
-        <path d="M34 72 C40 78 60 78 66 72" stroke="url(#goldGradient)" strokeWidth="2.5" strokeLinecap="round" />
+        {/* Subtle Visor Reflection Line */}
+        <path
+          d="M31 34 Q50 38 69 34"
+          stroke="#ffffff"
+          strokeWidth="1.2"
+          strokeOpacity="0.25"
+          strokeLinecap="round"
+          fill="none"
+        />
+
+        {/* Glowing Bot Agent Eyes */}
+        <g filter="url(#botGlow)">
+          <rect x="34" y="41" width="11" height="9" rx="4.5" fill="url(#botEyeGlow)" />
+          <circle cx="37" cy="44" r="1.5" fill="#ffffff" />
+
+          <rect x="55" y="41" width="11" height="9" rx="4.5" fill="url(#botEyeGlow)" />
+          <circle cx="58" cy="44" r="1.5" fill="#ffffff" />
+        </g>
+
+        {/* Friendly Status Micro-Dots */}
+        <circle cx="46" cy="56" r="1" fill="#38bdf8" opacity="0.8" />
+        <circle cx="50" cy="56" r="1" fill="#38bdf8" />
+        <circle cx="54" cy="56" r="1" fill="#38bdf8" opacity="0.8" />
+
+        {/* Bottom Chin Accent Plate */}
+        <rect x="42" y="70" width="16" height="3" rx="1.5" fill="#64748b" />
       </svg>
     </div>
   )
 }
 
-function SceneryIllustrationSvg() {
+/**
+ * Minimalist Theme Toggle Button
+ */
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return <div className="h-8 w-8" />
+
+  const isDark = theme === "dark"
+
   return (
-    <div className="group/scenery relative flex w-full max-w-sm items-center justify-center cursor-pointer">
-      <div className="absolute -inset-4 rounded-3xl bg-blue-400/10 blur-2xl transition-all duration-500 group-hover/scenery:bg-cyan-400/20" />
-      
-      <svg className="relative w-full h-auto transform transition-transform duration-500 group-hover/scenery:scale-[1.02]" viewBox="0 0 500 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="skySun" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#bfdbfe" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.1" />
-          </linearGradient>
-          <linearGradient id="bldgGlass" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="100%" stopColor="#eff6ff" />
-          </linearGradient>
-        </defs>
-
-        {/* Soft Background Hills */}
-        <path d="M0 240 C120 180 280 195 500 240 V240 H0 Z" fill="#cbd5e1" opacity="0.35" />
-        <path d="M0 240 C160 160 340 180 500 215 V240 H0 Z" fill="#93c5fd" opacity="0.3" />
-
-        {/* Radiant Sun Rays */}
-        <circle cx="250" cy="130" r="75" fill="url(#skySun)" />
-        <circle cx="250" cy="130" r="45" fill="#93c5fd" opacity="0.35" />
-
-        {/* Palm Trees Left */}
-        <g stroke="#3b82f6" strokeWidth="3" strokeLinecap="round">
-          <path d="M415 240 C425 200 420 170 405 140" fill="none" />
-          <path d="M405 140 C385 130 370 140 365 145" />
-          <path d="M405 140 C405 120 415 110 430 115" />
-          <path d="M405 140 C425 135 440 145 445 155" />
-        </g>
-
-        {/* Palm Trees Right */}
-        <g stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round">
-          <path d="M445 240 C450 210 447 185 437 160" fill="none" />
-          <path d="M437 160 C420 152 410 160 405 165" />
-          <path d="M437 160 C437 145 445 138 457 142" />
-        </g>
-
-        {/* Main Administrative Building */}
-        <g fill="url(#bldgGlass)" stroke="#2563eb" strokeWidth="2">
-          {/* Main foundation block */}
-          <rect x="120" y="150" width="220" height="90" rx="6" />
-          {/* Roof Triangular Pediment */}
-          <path d="M110 150 L230 90 L350 150 Z" fill="#dbeafe" />
-          {/* Top Clock Tower */}
-          <rect x="210" y="65" width="40" height="30" rx="3" fill="#ffffff" />
-          <path d="M205 65 L230 45 L255 65 Z" fill="#2563eb" />
-          <circle cx="230" cy="80" r="7" fill="#ffffff" stroke="#2563eb" strokeWidth="1.5" />
-          
-          {/* Architectural Pillars */}
-          <rect x="150" y="165" width="16" height="75" fill="#bfdbfe" />
-          <rect x="190" y="165" width="16" height="75" fill="#bfdbfe" />
-          <rect x="254" y="165" width="16" height="75" fill="#bfdbfe" />
-          <rect x="294" y="165" width="16" height="75" fill="#bfdbfe" />
-
-          {/* Center Arched Entrance */}
-          <path d="M218 240 V185 C218 175 242 175 242 185 V240 Z" fill="#1d4ed8" />
-
-          {/* Windows */}
-          <rect x="135" y="165" width="12" height="20" rx="2" fill="#60a5fa" />
-          <rect x="313" y="165" width="12" height="20" rx="2" fill="#60a5fa" />
-        </g>
-      </svg>
-    </div>
-  )
-}
-
-function UserAvatarIllustrationSvg() {
-  return (
-    <div className="group/avatar relative flex h-16 w-16 items-center justify-center rounded-full cursor-pointer">
-      <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 opacity-60 blur-md transition-all duration-300 group-hover/avatar:opacity-100 group-hover/avatar:blur-lg" />
-      <div className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 p-1 shadow-lg ring-2 ring-white dark:ring-slate-800 transform transition-transform duration-300 group-hover/avatar:scale-105">
-        <svg className="h-full w-full text-white" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="48" fill="#1e40af" opacity="0.3" />
-          <path d="M30 42 C30 25 40 18 50 18 C60 18 70 25 70 42 C65 38 58 35 50 35 C42 35 35 38 30 42 Z" fill="#0f172a" />
-          <circle cx="50" cy="45" r="18" fill="#fef08a" />
-          <circle cx="44" cy="44" r="2" fill="#0f172a" />
-          <circle cx="56" cy="44" r="2" fill="#0f172a" />
-          <path d="M45 51 Q50 56 55 51" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" fill="none" />
-          <path d="M25 85 C25 68 36 62 50 62 C64 62 75 68 75 85 Z" fill="#3b82f6" />
-          <path d="M44 62 L50 72 L56 62 Z" fill="#ffffff" />
-        </svg>
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 cursor-pointer"
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {isDark ? (
+        <Sun className="h-4 w-4 text-amber-400" />
+      ) : (
+        <Moon className="h-4 w-4 text-slate-700" />
+      )}
+    </button>
   )
 }
 
 function SignInForm() {
   const searchParams = useSearchParams()
-  const returnUrl = getSafeReturnUrl(searchParams.get("returnUrl") || searchParams.get("from"))
+  const returnUrl = getSafeReturnUrl(
+    searchParams.get("returnUrl") || searchParams.get("from")
+  )
+  const queryUsername = searchParams.get("username")
+  const queryPassword = searchParams.get("password")
+
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [selectedDemo, setSelectedDemo] = useState<string | null>(null)
@@ -224,17 +260,28 @@ function SignInForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
-      password: "",
+      username: queryUsername || "",
+      password: queryPassword || "",
       rememberMe: true,
     },
   })
+
+  useEffect(() => {
+    if (queryUsername) {
+      form.setValue("username", queryUsername, { shouldValidate: true })
+    }
+    if (queryPassword) {
+      form.setValue("password", queryPassword, { shouldValidate: true })
+    }
+  }, [queryUsername, queryPassword, form])
 
   const fillDemoAccount = (acc: (typeof demoAccounts)[0]) => {
     setSelectedDemo(acc.username)
     form.setValue("username", acc.username, { shouldValidate: true })
     form.setValue("password", acc.password, { shouldValidate: true })
-    toast.info(`Demo credentials for "${acc.role}" loaded! Click Sign In to proceed.`)
+    toast.info(`Loaded ${acc.role} credentials. Click Sign In to enter.`, {
+      duration: 2200,
+    })
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -252,13 +299,26 @@ function SignInForm() {
         response?.data?.token
 
       const refreshToken =
-        response?.refreshToken ||
-        response?.data?.refreshToken
+        response?.refreshToken || response?.data?.refreshToken
+
+      const companyId = response?.company?.id || response?.data?.company?.id || response?.companyId || response?.data?.companyId
 
       if (token) {
-        await setAuthCookies(token, refreshToken)
-        toast.success("Authentication successful! Welcome to Rumluos System.")
-        
+        if (typeof window !== "undefined") {
+          document.cookie = `rumluos_access_token=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`
+          localStorage.setItem("rumluos_access_token", token)
+          if (refreshToken) {
+            document.cookie = `rumluos_refresh_token=${encodeURIComponent(refreshToken)}; path=/; max-age=2592000; SameSite=Lax`
+            localStorage.setItem("rumluos_refresh_token", refreshToken)
+          }
+          if (companyId != null) {
+            document.cookie = `rumluos_company_id=${encodeURIComponent(companyId)}; path=/; max-age=2592000; SameSite=Lax`
+            localStorage.setItem("rumluos_company_id", String(companyId))
+          }
+        }
+        await setAuthCookies(token, refreshToken, companyId)
+        toast.success("Authentication successful! Welcome back.")
+
         window.location.href = returnUrl
       } else {
         toast.error("Invalid credentials or server response")
@@ -271,61 +331,53 @@ function SignInForm() {
   }
 
   return (
-    <main className="h-screen w-screen overflow-hidden flex flex-col bg-slate-100 dark:bg-slate-950 lg:flex-row">
-      {/* Left Hero Section */}
-      <section className="relative hidden h-full w-full flex-col justify-between overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-800 p-6 text-white lg:flex lg:w-5/12 xl:w-4/12 xl:p-8">
-        {/* Background Ambient Glow Effects */}
-        <div className="absolute -left-20 -top-20 h-80 w-80 rounded-full bg-white/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl pointer-events-none" />
+    <main className="fixed inset-0 h-screen w-screen overflow-hidden flex flex-col justify-between items-center p-3 sm:p-4 bg-slate-50 dark:bg-slate-950 selection:bg-blue-600 selection:text-white">
+      {/* Ambient background glow elements */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-500/15 via-indigo-500/10 to-transparent blur-3xl dark:from-blue-600/15 dark:via-indigo-600/10" />
+      <div className="pointer-events-none absolute -bottom-40 right-10 h-[400px] w-[500px] rounded-full bg-cyan-500/10 blur-3xl dark:bg-cyan-500/5" />
 
-        {/* Top Header & Emblem */}
-        <div className="relative z-10 flex flex-col items-center text-center">
-          <SystemEmblemSvg />
-          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-white xl:text-3xl">
-            Rumluos System
-          </h1>
-          <p className="mt-0.5 text-xs font-semibold tracking-wide text-blue-100">
-            System Operations & Management
-          </p>
-          <p className="mt-0.5 text-[11px] italic text-blue-200/80">
-            Tamang Datos, Maayos na System
-          </p>
+      {/* Subtle dotted matrix grid texture */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:24px_24px] opacity-40 dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] dark:opacity-50" />
+
+      {/* Top Bar with Brand & Theme Toggle */}
+      <header className="relative z-20 mx-auto flex w-full max-w-5xl items-center justify-between px-2 pt-1 sm:pt-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+          <span className="font-heading font-extrabold text-base sm:text-lg tracking-tight text-slate-900 dark:text-white">
+            Rumluos <span className="text-blue-600 dark:text-blue-400">System</span>
+          </span>
         </div>
 
-        {/* Center Vector Building & Palm Illustration */}
-        <div className="relative z-10 my-auto flex justify-center py-2">
-          <SceneryIllustrationSvg />
+        {/* Controls pill: Theme Toggle */}
+        <div className="flex items-center gap-1 rounded-2xl border border-slate-200/90 bg-white/80 px-2 py-1 shadow-xs backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
+          <ThemeToggle />
         </div>
+      </header>
 
-        {/* Bottom Footer Copyright */}
-        <div className="relative z-10 text-center text-[11px] font-medium text-blue-100/80">
-          © {new Date().getFullYear()} Rumluos System. All rights reserved.
-        </div>
-      </section>
-
-      {/* Right Login Container */}
-      <section className="relative flex h-full flex-1 flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-        {/* Floating Compact White Card */}
-        <div className="w-full max-w-[420px] rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40 sm:p-7">
-          
-          {/* Avatar Header */}
-          <div className="flex flex-col items-center text-center">
-            <UserAvatarIllustrationSvg />
-            <h2 className="mt-2.5 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Welcome Back!
-            </h2>
+      {/* Centered Elevated Sign-In Card: exactly 80vh, max-w-[490px] */}
+      <section className="relative z-10 flex flex-1 items-center justify-center w-full my-auto py-1">
+        <div className="w-full max-w-[490px] h-[80vh] max-h-[720px] min-h-[560px] flex flex-col justify-between rounded-3xl border border-slate-200/80 bg-white/95 p-6 sm:p-7 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all dark:border-slate-800/80 dark:bg-slate-900/95 dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          {/* Top Header: Bot Agent Logo & Title */}
+          <div className="flex flex-col items-center text-center shrink-0">
+            <BotAgentLogo className="h-14 w-14 sm:h-16 sm:w-16" />
+            <h1 className="mt-2.5 font-heading text-2xl font-bold tracking-tight text-slate-900 sm:text-[25px] dark:text-white leading-tight">
+              Welcome back
+            </h1>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-              Sign in to access your system dashboard
+              Sign in to your enterprise management dashboard
             </p>
           </div>
 
-          {/* Quick Demo Accounts Selection */}
-          <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50/50 p-2.5 dark:border-blue-950/50 dark:bg-blue-950/20">
-            <div className="mb-1.5 flex items-center justify-between px-1">
-              <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
-                <Sparkles className="h-3 w-3 text-blue-600" /> Demo Accounts
+          {/* 1-Click Quick Demo Access */}
+          <div className="my-2 rounded-2xl border border-slate-100 bg-slate-50/80 p-1.5 dark:border-slate-800/80 dark:bg-slate-950/40 shrink-0">
+            <div className="mb-1 flex items-center justify-between px-1">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <Sparkles className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                Quick Demo Access
               </span>
-              <span className="text-[9px] font-semibold text-slate-400">1-Click Auto Fill</span>
+              <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                1-Click Auto Fill
+              </span>
             </div>
             <div className="grid grid-cols-3 gap-1.5">
               {demoAccounts.map((acc) => {
@@ -336,128 +388,175 @@ function SignInForm() {
                     key={acc.username}
                     type="button"
                     onClick={() => fillDemoAccount(acc)}
-                    className={`flex flex-col items-center justify-center rounded-xl border p-1.5 text-center transition-all duration-200 ${
+                    className={`group relative flex h-9 items-center justify-center gap-1.5 rounded-xl border px-2 text-[11px] font-semibold transition-all duration-200 cursor-pointer ${
                       isSelected
-                        ? `border-blue-600 bg-gradient-to-r ${acc.activeGradient} text-white shadow-md shadow-blue-500/25 scale-[1.02]`
-                        : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50/80 hover:scale-[1.02] active:scale-[0.98] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                        ? "border-blue-500 bg-blue-50/90 text-blue-900 shadow-xs ring-2 ring-blue-500/20 dark:border-blue-500/80 dark:bg-blue-950/40 dark:text-blue-100"
+                        : "border-slate-200/80 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-800/80"
                     }`}
                   >
-                    <Icon className={`h-3.5 w-3.5 mb-0.5 ${isSelected ? "text-white" : "text-blue-600 dark:text-blue-400"}`} />
-                    <span className="text-[10px] font-bold truncate w-full">{acc.role}</span>
-                    <span className={`text-[9px] truncate w-full ${isSelected ? "text-blue-100" : "text-slate-400"}`}>{acc.username}</span>
+                    <Icon
+                      className={`h-3.5 w-3.5 shrink-0 ${
+                        isSelected
+                          ? "text-blue-600 dark:text-blue-400"
+                          : "text-slate-500 dark:text-slate-400"
+                      }`}
+                    />
+                    <span className="truncate">{acc.role}</span>
+                    {isSelected && (
+                      <Check className="h-3 w-3 text-blue-600 dark:text-blue-400 shrink-0" />
+                    )}
                   </button>
                 )
               })}
             </div>
           </div>
 
-          {/* Form */}
-          <form onSubmit={form.handleSubmit(onSubmit)} className="mt-4 space-y-3.5">
-            {/* Email Address / Username Field */}
+          {/* Sign In Form */}
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-3 shrink-0"
+            noValidate
+          >
+            {/* Username / Email Input */}
             <div className="space-y-1">
-              <label htmlFor="username" className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="username"
+                className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Email Address or Username
               </label>
-              <div className="relative">
-                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <div className="relative group/field">
+                <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within/field:text-blue-600 dark:group-focus-within/field:text-blue-400">
                   <Mail className="h-4 w-4" />
                 </div>
                 <Input
                   id="username"
-                  placeholder="menglang or name@company.com"
+                  type="text"
                   autoComplete="username"
+                  spellCheck="false"
+                  autoCapitalize="none"
+                  required
+                  placeholder="menglang or name@company.com"
                   {...form.register("username")}
-                  className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-9 pr-3 text-xs text-slate-900 transition-all placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-600/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white dark:focus:border-blue-500"
+                  className="h-10 rounded-xl border-slate-200/90 bg-slate-50/50 pl-10 pr-3 text-xs text-slate-900 transition-all placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-600/10 dark:border-slate-800 dark:bg-slate-950/60 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500 dark:focus:bg-slate-950"
                 />
               </div>
               {form.formState.errors.username && (
-                <p className="text-[11px] font-medium text-rose-500">{form.formState.errors.username.message}</p>
+                <p className="text-[11px] font-medium text-rose-500">
+                  {form.formState.errors.username.message}
+                </p>
               )}
             </div>
 
-            {/* Password Field */}
+            {/* Password Input */}
             <div className="space-y-1">
-              <label htmlFor="password" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                Password
-              </label>
-              <div className="relative">
-                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="password"
+                  className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                >
+                  Password
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
+              <div className="relative group/field">
+                <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within/field:text-blue-600 dark:group-focus-within/field:text-blue-400">
                   <Lock className="h-4 w-4" />
                 </div>
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="••••••••••••"
                   autoComplete="current-password"
+                  required
+                  placeholder="••••••••••••"
                   {...form.register("password")}
-                  className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-9 pr-10 text-xs text-slate-900 transition-all placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-600/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white dark:focus:border-blue-500"
+                  className="h-10 rounded-xl border-slate-200/90 bg-slate-50/50 pl-10 pr-10 text-xs text-slate-900 transition-all placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-600/10 dark:border-slate-800 dark:bg-slate-950/60 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500 dark:focus:bg-slate-950"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none dark:hover:bg-slate-800 dark:hover:text-slate-200 cursor-pointer"
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
                 >
-                  {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
               {form.formState.errors.password && (
-                <p className="text-[11px] font-medium text-rose-500">{form.formState.errors.password.message}</p>
+                <p className="text-[11px] font-medium text-rose-500">
+                  {form.formState.errors.password.message}
+                </p>
               )}
             </div>
 
-            {/* Checkbox and Forgot Password */}
-            <div className="flex items-center justify-between pt-0.5 text-xs">
-              <label className="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-slate-400 font-medium">
-                <Checkbox id="rememberMe" defaultChecked className="rounded-md border-slate-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" />
-                <span>Remember me</span>
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center pt-0.5">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-600 select-none dark:text-slate-400">
+                <Checkbox
+                  id="rememberMe"
+                  defaultChecked
+                  className="rounded-md border-slate-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                />
+                <span>Remember me on this device</span>
               </label>
-              <Link
-                href="/forgot-password"
-                className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
-              >
-                Forgot Password?
-              </Link>
             </div>
 
-            {/* Sign In Button */}
+            {/* Primary Sign In Button */}
             <Button
               type="submit"
-              className="mt-2 h-10 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-xs font-bold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:from-blue-500 hover:to-indigo-500 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+              className="group relative mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-xs font-bold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:from-blue-500 hover:to-indigo-500 hover:shadow-xl hover:shadow-blue-600/35 hover:scale-[1.008] active:scale-[0.99] disabled:opacity-70 disabled:pointer-events-none cursor-pointer"
               disabled={isLoading}
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Signing In...
                 </span>
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <LogIn className="h-3.5 w-3.5" />
-                  Sign In
+                  <span>Sign In to Dashboard</span>
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </span>
               )}
             </Button>
           </form>
 
-          {/* Security Footer Badges */}
-          <div className="mt-5 flex flex-col items-center gap-1.5 border-t border-slate-100 pt-4 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
-            <span className="flex items-center gap-1 font-medium text-[11px]">
-              <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" /> Secure access only
-            </span>
-            <div className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-              <Shield className="h-3 w-3" /> Protected by two-factor authentication
+          {/* Card Footer: Security Badge */}
+          <div className="border-t border-slate-100 pt-2.5 text-center dark:border-slate-800 shrink-0 space-y-2">
+            <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>256-bit SSL encrypted • Enterprise access control</span>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Minimalist Bottom Footer */}
+      <footer className="relative z-10 text-center text-xs text-slate-400 dark:text-slate-500 pb-1 shrink-0">
+        <p>© {new Date().getFullYear()} Rumluos System. All rights reserved.</p>
+      </footer>
     </main>
   )
 }
 
 export default function SignInPage() {
   return (
-    <Suspense fallback={<div className="flex h-screen w-screen items-center justify-center bg-slate-100 dark:bg-slate-950"><Loader2 className="h-7 w-7 animate-spin text-blue-600" /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-screen w-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+          <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
+        </div>
+      }
+    >
       <SignInForm />
     </Suspense>
   )

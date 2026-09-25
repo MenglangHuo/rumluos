@@ -26,7 +26,7 @@ function unwrapRefreshResponse(body: RefreshResponse | null): RefreshResponse | 
   return body
 }
 
-export async function setAuthCookies(accessToken: string, refreshToken?: string) {
+export async function setAuthCookies(accessToken: string, refreshToken?: string, companyId?: string | number | null) {
   const cookieStore = await cookies()
   
   // Example decode to find expiration, or just set it for a default long time
@@ -45,6 +45,16 @@ export async function setAuthCookies(accessToken: string, refreshToken?: string)
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 30, // 30 days
+    })
+  }
+
+  if (companyId != null) {
+    cookieStore.set("rumluos_company_id", String(companyId), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
     })
   }
 }

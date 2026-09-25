@@ -2,7 +2,8 @@ FROM eclipse-temurin:25-jdk AS build
 WORKDIR /workspace
 ARG APP_VERSION=0.1.0
 ENV APP_VERSION=${APP_VERSION}
-COPY gradlew gradle settings.gradle build.gradle ./
+COPY gradle/ gradle/
+COPY gradlew settings.gradle build.gradle ./
 RUN chmod +x gradlew && ./gradlew dependencies --no-daemon
 COPY src src
 RUN ./gradlew bootJar --no-daemon -x test

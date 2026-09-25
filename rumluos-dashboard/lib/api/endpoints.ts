@@ -142,7 +142,16 @@ export const profileApi = {
 
 // ---- Dashboard -----------------------------------------------
 export const dashboardApi = {
-  stats: () => api.get<DashboardStats>("/dashboard/stats").then((r) => r.data),
+  stats: () =>
+    api
+      .get<DashboardStats>("/dashboard/stats")
+      .catch((err) => {
+        if (err?.status === 404) {
+          return api.get<any>("/reports/dashboard").catch(() => ({ data: {} }))
+        }
+        return { data: {} }
+      })
+      .then((r) => r.data || {}),
 }
 
 // ---- Companies (super admin) ---------------------------------

@@ -16,7 +16,7 @@ spring:
     enabled: ${SPRING_FLYWAY_ENABLED:true}
     url: ${SPRING_FLYWAY_URL:jdbc:postgresql://localhost:54326/rumluos_db}
     user: ${SPRING_FLYWAY_USER:postgres}
-    password: ${SPRING_R2DBC_PASSWORD:}
+    password: ${SPRING_FLYWAY_PASSWORD:${SPRING_R2DBC_PASSWORD:}}
     baseline-on-migrate: true
 
 info:

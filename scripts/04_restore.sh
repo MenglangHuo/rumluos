@@ -16,6 +16,22 @@ if [[ "${CONFIRM_RESTORE:-}" != "1" ]]; then
   exit 1
 fi
 
-log_step "Restoring ${BACKUP_FILE}"
-compose exec -T postgres sh -c 'pg_restore --clean --if-exists --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < "${BACKUP_FILE}"
+POSTGRES_HOST="$(get_env POSTGRES_HOST postgres)"
+POSTGRES_PORT="$(get_env POSTGRES_PORT 5432)"
+POSTGRES_USER="$(get_env POSTGRES_USER rumluos)"
+POSTGRES_DB="$(get_env POSTGRES_DB rumluos_db)"
+POSTGRES_PASSWORD="$(get_env POSTGRES_PASSWORD)"
+
+if [[ "${POSTGRES_HOST}" == "postgres" || "${POSTGRES_HOST}" == "localhost" || "${POSTGRES_HOST}" == "127.0.0.1" ]]; then
+  log_step "Restoring to local PostgreSQL: ${BACKUP_FILE}"
+  compose exec -T postgres sh -c 'pg_restore --clean --if-exists --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < "${BACKUP_FILE}"
+else
+  log_step "Restoring to remote PostgreSQL ${POSTGRES_HOST}:${POSTGRES_PORT}: ${BACKUP_FILE}"
+  docker run --rm -i \
+    --network rumluos \
+    -e PGPASSWORD="${POSTGRES_PASSWORD}" \
+    postgres:17-alpine \
+    pg_restore --clean --if-exists --no-owner -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" < "${BACKUP_FILE}"
+fi
+
 log_success "Restore completed"

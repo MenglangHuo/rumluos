@@ -51,6 +51,18 @@ validate_compose() {
   compose config >/dev/null
 }
 
+get_env() {
+  local key="$1"
+  local default_val="${2:-}"
+  local val
+  val="$(grep -E "^${key}=" "${ENV_FILE}" 2>/dev/null | head -n 1 | cut -d= -f2- | tr -d '\r' || true)"
+  if [[ -n "${val}" ]]; then
+    printf '%s' "${val}"
+  else
+    printf '%s' "${default_val}"
+  fi
+}
+
 require_command() {
   command -v "$1" >/dev/null 2>&1 || {
     log_error "Required command not found: $1"

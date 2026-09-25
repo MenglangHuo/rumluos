@@ -26,10 +26,10 @@ services:
     environment:
       SERVER_PORT: 8080
       APP_VERSION: ${APP_VERSION:-0.1.0}
-      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/${POSTGRES_DB:-rumluos_db}
+      SPRING_R2DBC_URL: r2dbc:postgresql://${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-rumluos_db}
       SPRING_R2DBC_USERNAME: ${POSTGRES_USER:-rumluos}
       SPRING_R2DBC_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-      SPRING_FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-rumluos_db}
+      SPRING_FLYWAY_URL: jdbc:postgresql://${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-rumluos_db}
       SPRING_FLYWAY_USER: ${POSTGRES_USER:-rumluos}
       SPRING_FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY is required}
@@ -37,11 +37,22 @@ services:
       AWS_S3_BUCKET: ${AWS_S3_BUCKET:?AWS_S3_BUCKET is required}
       AWS_S3_PUBLIC_BUCKET_NAME: ${AWS_S3_PUBLIC_BUCKET_NAME:-}
       AWS_S3_REGION: ${AWS_S3_REGION:-ap-southeast-1}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-rumluos-backend}
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+      OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
+      OTEL_LOGS_EXPORTER: ${OTEL_LOGS_EXPORTER:-none}
+      OTEL_METRICS_ENABLED: ${OTEL_METRICS_ENABLED:-false}
+      OTEL_TRACES_SAMPLER_ARG: ${OTEL_TRACES_SAMPLER_ARG:-1.0}
+      OTEL_METRIC_EXPORT_INTERVAL: ${OTEL_METRIC_EXPORT_INTERVAL:-PT1M}
+      GRAFANA_OTLP_URL: ${GRAFANA_OTLP_URL:-}
+      GRAFANA_OTLP_AUTH: ${GRAFANA_OTLP_AUTH:-}
     volumes:
       - upload_data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
+        required: false
     networks: [rumluos]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
@@ -74,6 +85,7 @@ services:
       - "443:443"
     volumes:
       - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/certs:/etc/nginx/certs:ro
     depends_on: [frontend, backend]
     networks: [rumluos]
 

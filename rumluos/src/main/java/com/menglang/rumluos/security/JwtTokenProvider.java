@@ -57,14 +57,12 @@ public class JwtTokenProvider {
             java.security.KeyFactory kf = java.security.KeyFactory.getInstance("RSA");
 
             // Parse Private Key (PKCS8)
-            String cleanPrivate = cleanKey(privateKeyStr);
-            byte[] privateKeyBytes = java.util.Base64.getDecoder().decode(cleanPrivate);
+            byte[] privateKeyBytes = decodeKeyBytes(privateKeyStr);
             java.security.spec.PKCS8EncodedKeySpec privateSpec = new java.security.spec.PKCS8EncodedKeySpec(privateKeyBytes);
             this.privateKey = kf.generatePrivate(privateSpec);
 
             // Parse Public Key (X509)
-            String cleanPublic = cleanKey(publicKeyStr);
-            byte[] publicKeyBytes = java.util.Base64.getDecoder().decode(cleanPublic);
+            byte[] publicKeyBytes = decodeKeyBytes(publicKeyStr);
             java.security.spec.X509EncodedKeySpec publicSpec = new java.security.spec.X509EncodedKeySpec(publicKeyBytes);
             this.publicKey = kf.generatePublic(publicSpec);
 
@@ -73,6 +71,17 @@ public class JwtTokenProvider {
             log.error("Failed to load RSA keys from configuration", e);
             throw new IllegalStateException("Invalid RSA key configuration for JWT signing: " + e.getMessage(), e);
         }
+    }
+
+    private byte[] decodeKeyBytes(String keyStr) {
+        String clean = cleanKey(keyStr);
+        byte[] decoded = java.util.Base64.getDecoder().decode(clean);
+        String asText = new String(decoded, java.nio.charset.StandardCharsets.UTF_8).trim();
+        if (asText.contains("-----BEGIN")) {
+            clean = cleanKey(asText);
+            return java.util.Base64.getDecoder().decode(clean);
+        }
+        return decoded;
     }
 
     private String cleanKey(String key) {
