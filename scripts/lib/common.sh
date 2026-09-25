@@ -51,6 +51,37 @@ validate_compose() {
   compose config >/dev/null
 }
 
+get_compose_services() {
+  if [[ -z "${VALID_COMPOSE_SERVICES:-}" ]]; then
+    VALID_COMPOSE_SERVICES="$(compose --profile "*" config --services 2>/dev/null || true)"
+  fi
+  printf '%s\n' "${VALID_COMPOSE_SERVICES}"
+}
+
+validate_services() {
+  local all_services
+  all_services="$(get_compose_services)"
+  if [[ -z "${all_services}" ]]; then
+    return 0
+  fi
+
+  local invalid=()
+  local svc
+  for svc in "$@"; do
+    if ! grep -qxF "${svc}" <<< "${all_services}"; then
+      invalid+=("${svc}")
+    fi
+  done
+
+  if [[ ${#invalid[@]} -gt 0 ]]; then
+    local valid_list
+    valid_list="$(printf '%s\n' "${all_services}" | tr '\n' ' ' | sed -e 's/[[:space:]]*$//' -e 's/[[:space:]]\+/, /g')"
+    log_error "Unknown service(s): ${invalid[*]}. Valid services are: ${valid_list}"
+    exit 1
+  fi
+  return 0
+}
+
 get_env() {
   local key="$1"
   local default_val="${2:-}"
