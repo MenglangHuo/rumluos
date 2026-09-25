@@ -1,5 +1,6 @@
 services:
   postgres:
+    profiles: ["local"]
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
@@ -49,10 +50,6 @@ services:
       GRAFANA_OTLP_AUTH: ${GRAFANA_OTLP_AUTH:-}
     volumes:
       - upload_data:/app/uploads
-    depends_on:
-      postgres:
-        condition: service_healthy
-        required: false
     networks: [rumluos]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
